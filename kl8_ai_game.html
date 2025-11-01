@@ -836,7 +836,33 @@
             document.getElementById('autoSelectBtn').addEventListener('click', function() {
                 const method = document.getElementById('predictionMethod').value;
                 const predictedNumbers = predictNumbers(method);
-                showPredictedNumbers(predictedNumbers);
+                
+                // 自动保存预测记录，但避免重复保存相同期号的记录
+                localState.selectedNumbers = new Set(predictedNumbers);
+                
+                // 获取当前预测期号
+                const currentPeriod = localState.lastPrediction.period;
+                
+                // 检查是否已存在相同期号的预测记录
+                const existingIndex = localState.predictionHistory.findIndex(p => p.period === currentPeriod);
+                
+                if (existingIndex !== -1) {
+                    // 如果存在相同期号的记录，则更新它而不是创建新记录
+                    const updatedPrediction = {
+                        ...localState.predictionHistory[existingIndex],
+                        timestamp: new Date().toLocaleString('zh-CN'),
+                        method: method,
+                        numbers: Array.from(localState.selectedNumbers).sort((a, b) => a - b)
+                    };
+                    
+                    localState.predictionHistory[existingIndex] = updatedPrediction;
+                    savePredictionHistory();
+                    updateHistoryTable();
+                    showNotification('预测记录已更新', 'success');
+                } else {
+                    // 如果不存在相同期号的记录，则创建新记录
+                    savePrediction();
+                }
             });
             
             // 预测方法选择事件
@@ -2719,8 +2745,8 @@
                 return;
             }
             
-            // 显示最近5条记录
-            const recentHistory = localState.predictionHistory.slice(0, 5);
+            // 显示最近10条记录
+            const recentHistory = localState.predictionHistory.slice(0, 10);
             
             recentHistory.forEach(prediction => {
                 const row = document.createElement('tr');
@@ -3103,6 +3129,8 @@
                     // 直接使用备份数据
                     const simpleCreateData = [
                         // 现有数据保持不变
+                        { period: "2025290", numbers: ["08", "09", "10", "19", "20", "25", "26", "30", "32", "35", "40", "41", "45", "47", "59", "51", "54", "65", "68", "75"] },
+                        { period: "2025289", numbers: ["03", "06", "07", "10", "11", "13", "14", "15", "31", "35", "40", "41", "43", "45", "55", "57", "66", "72", "73", "75"] },
                         { period: "2025288", numbers: ["04", "11", "15", "16", "22", "32", "37", "46", "47", "49", "51", "53", "54", "55", "60", "62", "70", "72", "73", "74"] },
                         { period: "2025287", numbers: ["01", "06", "17", "18", "21", "22", "23", "24", "31", "32", "40", "43", "48", "49", "52", "57", "58", "60", "68", "79"] },
                         { period: "2025286", numbers: ["06", "12", "14", "16", "22", "24", "25", "34", "38", "39", "41", "42", "43", "54", "57", "58", "61", "62", "68", "74"] },
